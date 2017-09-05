@@ -6,11 +6,14 @@ import com.teamtreehouse.flashy.repositories.FlashCardRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 import static java.util.stream.Collectors.toList;
 
@@ -52,11 +55,23 @@ public class FlashCardServiceImpl implements FlashCardService {
   @Override
   public FlashCard getNextFlashCardBasedOnViews(Map<Long, Long> idToViewCounts) {
     FlashCard card = getNextUnseenFlashCard(idToViewCounts.keySet());
-    if (card != null) {
-      return card;
+    if (card == null) {
+      card = getLeastViewedFlashCard(idToViewCounts);
     }
+    return card;
+  }
+
+  public FlashCard getLeastViewedFlashCard(Map<Long, Long> idToViewCounts) {
     Long leastViewedId = null;
-    for (Map.Entry<Long, Long> entry : idToViewCounts.entrySet()) {
+    List<Map.Entry<Long, Long>> entries = new ArrayList<>(idToViewCounts.entrySet());
+    Collections.shuffle(entries);
+    return entries.stream()
+                  .min(Comparator.comparing(Map.Entry::getValue))
+                  .map(entry -> flashCardRepository.findOne(entry.getKey()))
+                  .orElseThrow(IllegalArgumentException::new);
+
+    /*
+    for (Map.Entry<Long, Long> entry : entries) {
       if (leastViewedId == null) {
         leastViewedId = entry.getKey();
         continue;
@@ -68,6 +83,7 @@ public class FlashCardServiceImpl implements FlashCardService {
 
     }
     return flashCardRepository.findOne(leastViewedId);
+    */
   }
 
   @Override
